@@ -12,7 +12,18 @@ public enum MedicationCategory {
     OTC(false),
 
     /** Prescription only: a prescriber must be given. */
-    PRESCRIPTION(true);
+    PRESCRIPTION(true),
+
+    /** Controlled substance: a prescriber must be given and must be named (not null or blank). */
+    CONTROLLED(true) {
+        @Override
+        public Optional<String> screen(String medicationName, String prescriber) {
+            if (prescriber == null || prescriber.isBlank()) {
+                return Optional.of("Cannot dispense " + medicationName + " without a named prescriber");
+            }
+            return Optional.empty();
+        }
+    };
 
     private final boolean usesPrescriber;
 

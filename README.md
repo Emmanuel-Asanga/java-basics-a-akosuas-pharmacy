@@ -10,14 +10,21 @@ The main aim is to organise the code so it is easier to understand, test and mai
 
 ## Running the project
 
-You need JDK 21 or later. There are no external dependencies.
+You need JDK 21 or later and Maven. There are no runtime dependencies; JUnit 5 is used for tests only.
+
+```bash
+mvn test                                   # compile and run all tests
+mvn compile                                # compile only
+java -cp target/classes pharmacy.PharmacyTracker   # run the demo
+```
 
 
 ## Project structure
 
 ```text
 src/main/java/pharmacy/
-  PharmacyTracker.java             Entry point and demo
+  PharmacyDemo.java             Entry point and demo
+  PharmacyTracker.java             
   domain/
     Pharmacy.java                   Handles dispensing, restocking and transaction history
     Medication.java                 Stores medicine details and controls stock changes
@@ -32,14 +39,15 @@ src/main/java/pharmacy/
     ConsoleView.java                 Handles console output
 
 src/test/java/pharmacy/
-  AllTests.java                      Dependency-free tests
-
-
-test-results/
-
+  Shop.java                          Shared test fixture (same stock and customers as the demo)
+  StockRuleTest.java                 Stock protection, overflow, refusal reasons
+  OriginalBehaviourTest.java         Behaviour kept from the original, prescriber audit record
+  ReorderLevelTest.java              Reorder-level alerts and report section
+  EncapsulationTest.java             Read-only views, private fields, immutable records
+  ControlledMedicationTest.java      CONTROLLED category rules
 ```
 
-The main classes are separated according to what they do. The domain classes handle the pharmacy rules, while `ConsoleView` handles printing. The test folder contain the checks and evidence I used during the rebuild.
+The main classes are separated according to what they do. The domain classes handle the pharmacy rules, while `ConsoleView` handles printing. The test folder contains the JUnit tests I used during the rebuild.
 
 ## Main behaviour change: stock protection
 
@@ -94,7 +102,9 @@ I considered using separate subclasses such as `OtcMedication` and `Prescription
 
 At the pharmacy level, a refused sale is a normal business outcome, not something staff should see as a program crash. For that reason, `Pharmacy` returns an `Outcome` that is either `Completed` or `Refused(reason)`.
 
+**Where the exception is caught.** `Medication.add()` and `remove()` throw `InvalidStockChangeException`. `Pharmacy.dispense()` and `Pharmacy.restock()` catch it and return `Refused(reason)`, so it never reaches `ConsoleView` or the caller. `StockRuleTest.refusalReasonsAreNeverBlank` checks that every refusal path carries a reason.
 This also improves on the original `void` return type. The caller can now check whether the operation succeeded or was refused.
+
 
 ### 5. Console output is handled separately
 
@@ -119,27 +129,16 @@ There are a few things I left unchanged so the rebuild would not introduce extra
 
 | Kept behaviour | Reason | Possible follow-up |
 |---|---|---|
-| Money is still stored as `double` | Changing to `BigDecimal` could change the displayed amounts, such as `25.0` to `25.00` | Consider changing the money handling separately |
+| Money is still stored as `double` | Changing to `BigDecimal` could change the displayed amounts, such as `25.0` to `25.00` | Consider changing the money handling separately (pinned by `OriginalBehaviourTest.blankPrescriberAccepted`)|
 | Walk-in customers still receive a history entry | This is what the original program did | Confirm whether the pharmacy wants history only for registered customers |
 | A blank prescriber (`""`) is still accepted for an ordinary prescription medicine | Rejecting it would be another behaviour change | The controlled category will require a named prescriber |
 
 ## Adding controlled substances later
 
-The planned controlled-substances category has an extra requirement: every dispense must have a named prescriber.
+I designed `MedicationCategory` so the prescriber rule is handled there, and I added a `CONTROLLED` constant to show it works. It overrides `screen()` to require a named, non-blank prescriber:
+(keep the existing code block, then add:)
+`ControlledMedicationTest` covers a null prescriber, a blank prescriber and a named prescriber. `Pharmacy.dispense()` did not need to change.
 
-I designed `MedicationCategory` so the prescriber rule is handled there. To demonstrate this, I tried adding a `CONTROLLED` constant in a separate scratch copy:
-
-```java
-CONTROLLED(true) {
-    @Override
-    public Optional<String> screen(String medicationName, String prescriber) {
-        if (prescriber == null || prescriber.isBlank()) {
-            return Optional.of("Cannot dispense " + medicationName + " without a named prescriber");
-        }
-        return Optional.empty();
-    }
-};
-```
 
 The main reason this is easier in the rebuild is that the stock rule, customer discount and transaction handling are already managed separately. Adding another category does not require another copy of the dispensing logic.
 
@@ -155,18 +154,13 @@ A typing mistake in the new category could also have caused the original program
 
 ## Additional improvement: reorder levels
 
-I also added a reorder level to each medicine. When the stock reaches that level or goes below it, the medicine is included in the end-of-day report under **Reorder needed**.
-
-`Pharmacy.getMedicationsToReorder()` returns the medicines that need to be reordered.
-
-Example output from a scratch run using reorder levels of 20 for Paracetamol and 10 for Amoxicillin:
-
+`PharmacyDemo.runReorderDemo()` shows this in the committed demo. Run it with `java -cp target/classes pharmacy.PharmacyTracker`; it prints:
 ```text
-=== Akosua's Pharmacy - end of day ===
+=== Akosua's Pharmacy (reorder demo) - end of day ===
 Stock levels:
   Paracetamol 500mg (OTC): 15 in stock
   Amoxicillin 250mg (PRESCRIPTION): 4 in stock
-Transactions today: 3
+Transactions today: 2
 Reorder needed:
   Paracetamol 500mg: 15 left (reorder at 20)
   Amoxicillin 250mg: 4 left (reorder at 10)
@@ -187,10 +181,7 @@ I considered automatic supplier reordering and saving stock to a file. I did not
 The prescriber field in `Transaction` is separate from this improvement. I added it as groundwork for the controlled-substances requirement, since that information needs to be available in the audit record.
 
 ## Testing and comparison with the original
-
-I used the original program as a reference while rebuilding. 
-It runs the original program and the rebuild so their outputs can be compared.
-
+Tests are written with JUnit 5 and run with `mvn test`. 
 The checks cover the following:
 
 | Check | What I verified |
@@ -222,4 +213,3 @@ There are still some limitations in the program:
 - Data is kept in memory, so it is lost when the program closes. The original program worked the same way.
 - IDs use `AtomicInteger`, but stock changes are not synchronised. This is suitable for the current single-user console program. If several terminals share one `Pharmacy` instance in the future, stock changes will need proper synchronisation.
 - The domain classes are in the same `pharmacy.domain` package. Package-private methods are therefore accessible to other classes in that package. A reflection test checks that a public stock setter has not been added.
-- The tests use a small hand-written runner instead of JUnit. They could be moved to JUnit later.
