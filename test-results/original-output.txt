@@ -1,0 +1,10 @@
+Dispensed 2 x Paracetamol 500mg to Kofi Mensah for GHS 25.0
+Dispensed 1 x Amoxicillin 250mg to Ama Owusu (prescribed by Dr. Boateng) for GHS 28.5
+Restocked 50 x Paracetamol 500mg
+Dispensed 100 x Amoxicillin 250mg to Kofi Mensah (prescribed by Dr. Boateng) for GHS 3000.0
+
+=== Akosua's Pharmacy - end of day ===
+Stock levels:
+  Paracetamol 500mg (OTC): 148 in stock
+  Amoxicillin 250mg (PRESCRIPTION): -61 in stock
+Transactions today: 4

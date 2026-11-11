@@ -1,0 +1,25 @@
+Dispensed 3 x Paracetamol 500mg to Ama Owusu for GHS 35.625
+Cannot dispense Amoxicillin 250mg without a prescriber
+Dispensed 1 x Amoxicillin 250mg to Kofi Mensah (prescribed by ) for GHS 30.0
+Dispensed 1 x Paracetamol 500mg to Kofi Mensah for GHS 12.5
+Restocked 10 x Amoxicillin 250mg
+Dispensed 49 x Amoxicillin 250mg to Ama Owusu (prescribed by Dr. Boateng) for GHS 1396.5
+
+=== Extra Scenario Pharmacy - end of day ===
+Stock levels:
+  Paracetamol 500mg (OTC): 96 in stock
+  Amoxicillin 250mg (PRESCRIPTION): 0 in stock
+Transactions today: 5
+
+-- medications
+1|Paracetamol 500mg|12.5|OTC|96
+2|Amoxicillin 250mg|30.0|PRESCRIPTION|0
+-- customers
+1|Kofi Mensah|WALK_IN|null|[Got 1 x Amoxicillin 250mg, Got 1 x Paracetamol 500mg]
+2|Ama Owusu|REGISTERED|null|[Got 3 x Paracetamol 500mg, Got 49 x Amoxicillin 250mg]
+-- transactions
+1|Ama Owusu|Paracetamol 500mg|3|35.625|DISPENSE
+2|Kofi Mensah|Amoxicillin 250mg|1|30.0|DISPENSE
+3|Kofi Mensah|Paracetamol 500mg|1|12.5|DISPENSE
+4|(supplier)|Amoxicillin 250mg|10|0.0|RESTOCK
+5|Ama Owusu|Amoxicillin 250mg|49|1396.5|DISPENSE
